@@ -1,58 +1,98 @@
-// Lambda Function per ottenere i video "Watch Next" di un TEDx Talk
-// Collegata a MongoDB Atlas
-// Input: ID del talk
-// Output: lista di talk suggeriti con titolo, id e punteggio
+// MyTEDx Rewind - Lambda Function completa
+// Scopo: dato l'ID di un talk, restituisce i talk suggeriti ordinati per punteggio
 
 const { MongoClient } = require("mongodb");
 
-// URI di connessione (da sostituire con i tuoi dati MongoDB Atlas)
-const uri = "mongodb+srv://utente:password@cluster.mongodb.net/test?retryWrites=true&w=majority";
+// Inserisci il tuo URI MongoDB Atlas
+const uri = "mongodb+srv://<utente>:<password>@cluster.mongodb.net/?retryWrites=true&w=majority";
 const client = new MongoClient(uri);
 
 exports.handler = async (event) => {
+    console.log("⏳ Richiesta ricevuta:", event);
+
     try {
-        // Parsing del corpo della richiesta
+        // 1. Validazione dell'input
+        if (!event.body) {
+            return erroreClient("Nessun corpo nella richiesta.");
+        }
+
         const body = JSON.parse(event.body);
-        const talkId = body.id;
-
-        if (!talkId) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ errore: "ID del talk mancante" }),
-            };
+        if (!body.id || typeof body.id !== "string") {
+            return erroreClient("ID non valido. Deve essere una stringa.");
         }
 
-        // Connessione al database e alla collezione
+        const talkId = body.id.trim();
+
+        // 2. Connessione al DB
         await client.connect();
-        const database = client.db("tedx");
-        const talks = database.collection("talks");
+        const db = client.db("tedx");
+        const talks = db.collection("talks");
 
-        // Cerchiamo il talk corrispondente all'ID
-        const talk = await talks.findOne({ _id: talkId });
+        // 3. Recupero del talk principale
+        const mainTalk = await talks.findOne({ _id: talkId });
+        if (!mainTalk) {
+            return erroreClient("Talk non trovato.");
+        }
 
-        if (!talk || !talk.related_talks) {
+        // 4. Recupero dei talk suggeriti (related_talks)
+        const relatedIds = (mainTalk.related_talks || []).map(r => r.id);
+
+        if (!relatedIds.length) {
             return {
-                statusCode: 404,
-                body: JSON.stringify({ errore: "Talk non trovato o senza suggerimenti" }),
+                statusCode: 200,
+                body: JSON.stringify({
+                    talk_corrente: mainTalk.title,
+                    messaggio: "Nessun talk suggerito trovato.",
+                    suggeriti: []
+                }),
             };
         }
 
-        // Restituiamo l'elenco dei talk suggeriti
+        // 5. Query multipla per ottenere info dettagliate dei related
+        const relatedTalksRaw = await talks.find({ _id: { $in: relatedIds } }).toArray();
+
+        // 6. Costruzione lista suggerimenti con punteggio finale
+        const suggeriti = relatedTalksRaw.map(t => {
+            const baseScore = t.score || 50;
+            const bonus = t.tags?.includes("innovation") ? 10 : 0;
+            const finalScore = baseScore + bonus;
+
+            return {
+                id: t._id,
+                title: t.title,
+                tags: t.tags || [],
+                score: finalScore
+            };
+        });
+
+        // 7. Ordinamento per score decrescente
+        suggeriti.sort((a, b) => b.score - a.score);
+
+        // 8. Risposta finale
         return {
             statusCode: 200,
             body: JSON.stringify({
-                talk_corrente: talk.title,
-                suggeriti: talk.related_talks // es. [{id, title, score}]
+                talk_corrente: mainTalk.title,
+                suggeriti: suggeriti
             }),
         };
 
     } catch (err) {
-        console.error("Errore:", err);
+        console.error("❌ Errore interno:", err);
         return {
             statusCode: 500,
-            body: JSON.stringify({ errore: "Errore interno" }),
+            body: JSON.stringify({ errore: "Errore interno del server" }),
         };
     } finally {
         await client.close();
+        console.log("✅ Connessione chiusa.");
     }
 };
+
+// Funzione per errori lato client (400)
+function erroreClient(messaggio) {
+    return {
+        statusCode: 400,
+        body: JSON.stringify({ errore: messaggio }),
+    };
+}
