@@ -1,0 +1,19 @@
+
+
+Questa applicazione consente agli utenti di inserire l'ID di un talk TEDx e ricevere suggerimenti personalizzati su quali video guardare dopo, grazie a un'API sviluppata con AWS Lambda e API Gateway.
+
+## Funzionalità principali
+
+- Inserimento ID video
+- Visualizzazione dei talk suggeriti
+- Interfaccia semplice e usabile
+
+## Struttura dei file
+
+- `main.dart`: entry point dell’applicazione
+- `home_screen.dart`: schermata iniziale
+- `watch_next_screen.dart`: lista dei video suggeriti
+- `api_service.dart`: integrazione API REST
+
+## 🌐 API utilizzata
+da finire
