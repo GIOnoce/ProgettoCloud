@@ -1,0 +1,5 @@
+# variables.txt
+# Copia e incolla queste come variabili d’ambiente nella Lambda su AWS
+
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
+copiare e sostituire <username>, <password>, <cluster> con le credenziali reali del cluster MongoDB Atlas.
