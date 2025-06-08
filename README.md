@@ -165,7 +165,12 @@ POST /get_watch_next
 
 ## Struttura del repository
 
+
 ```
+/MyTedX Rewind/
+
+E' il frontend in flutter del progetto
+
 /lambda/
   get_watch_next_by_id/
   update_percentage/
