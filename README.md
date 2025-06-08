@@ -16,10 +16,8 @@
 
 - **Amazon S3** – Archiviazione dei dataset CSV
 - **AWS Glue (PySpark)** – ETL dei dati e calcolo `related_talks`
-- **Amazon Comprehend** – Analisi semantica e sentiment
 - **MongoDB Atlas** – Database NoSQL finale
 - **AWS Lambda + API Gateway** – Backend serverless per le API
-- **Amazon OpenSearch** – Ricerca semantica
 - **Flutter** – App mobile cross-platform
 - **GitHub + CodePipeline** – CI/CD
 
@@ -27,27 +25,56 @@
 
 ## Funzionalità chiave
 
-- Navigazione tra video suggeriti dopo ogni visione
+- Navigazione tra talk suggeriti dopo ogni visione
 - Calcolo dinamico del punteggio dei talk (basato su parole chiave e sentiment)
-- Evidenziazione delle frasi chiave tramite analisi NLP
 - Aggiornamento del punteggio tramite Lambda function `update_percentage`
 
 ---
 
 ## Dataset trattati
 
-- `talks.csv`: metadati dei video (id, title, tag, ecc.)
-- `watch_next.csv`: relazioni tra talk
-- `transcripts.csv`: trascrizioni per analisi semantica
+- `final_list.csv`: metadati dei video (id, title, tag, ecc.)
+- `related_videos.csv`: relazioni tra talk
+- `details.csv`: trascrizioni per analisi semantica
+- `tags.csv`
 
 ---
 
 ## Job PySpark – AWS Glue
 
-- Join dei dataset
-- Calcolo punteggio semantico
-- Creazione campo `related_talks`
-- Scrittura su MongoDB
+1. Caricamento dati da S3
+
+Legge 4 file CSV da S3: final_list.csv, details.csv, tags.csv, e related_videos.csv
+Tutti i file contengono informazioni sui talk TEDx
+
+2. Elaborazione e join dei dataset
+
+Dataset principale: parte da final_list.csv
+Dettagli: fa join con details.csv per aggiungere descrizioni, durata, presenter, data di pubblicazione
+Tags: aggrega i tag per ogni video raggruppandoli in un array
+Video correlati: elabora le relazioni tra video creando una struttura con score semantico
+
+3. Processamento video correlati
+Il job crea un sistema di raccomandazioni:
+
+Calcola uno score semantico basato sul numero di visualizzazioni (normalizzato)
+Raggruppa i video correlati per ogni talk principale
+Li ordina per score e mantiene solo i top 10
+Crea una struttura con: ID, score, titolo, presenter
+
+4. Dataset finale
+Produce un documento per ogni talk TEDx con:
+
+Tutti i metadati originali
+Dettagli estesi (descrizione, durata, etc.)
+Array di tag
+Array di talk correlati con score di rilevanza
+
+5. Salvataggio in MongoDB
+
+Converte il dataset in formato compatibile MongoDB
+Salva nella collection tedx_data del database unibg_tedx_2025
+Usa l'ID del video come _id di MongoDB
 
 Esempio schema output:
 
@@ -68,10 +95,50 @@ Esempio schema output:
 ## Lambda Functions
 
 ### `get_watch_next_by_id.js`
-Restituisce i talk suggeriti per un dato ID, ordinati per punteggio personalizzato.
+
+- Trova un talk specifico usando identificatori flessibili
+- Suggerisce contenuti correlati basati su score pre-calcolati
+- Gestisce inconsistenze negli ID tra diversi dataset
+- Fornisce un'API robusta per il frontend di un'applicazione TEDx
 
 ### `update_percentage.js`
-Aggiorna dinamicamente il punteggio `score` di un talk in base al feedback utente (con logica 80/20).
+
+- Apprendimento continuo: I talk migliorano/peggiorano i loro score basandosi sul feedback reale
+- Effetto rete: Il feedback su un talk influenza anche i talk correlati
+- Stabilità: La regola 80/20 evita oscillazioni brusche degli score
+- Tracciabilità: Mantiene storico completo per analisi e debug
+
+### `add_favorites`
+
+- Salvare talk interessanti per dopo
+- Creare liste personalizzate
+- Avere accesso rapido ai contenuti preferiti
+
+### `remove_favorites`
+
+- Rimuovere talk che non interessano più
+- Gestire dinamicamente la propria lista preferiti
+- Avere controllo completo sui contenuti salvati
+
+### `get_favorites`
+
+- Visualizzazione di tutti i talk salvati
+- Accesso rapido ai contenuti preferiti
+- Esperienza consistente anche se alcuni talk vengono modificati/cancellati
+
+### `check_favorite`
+
+- Mostrare icona "cuore pieno/vuoto" nei talk
+- Aggiornare UI in tempo reale
+- Evitare tentativi di aggiunta duplicata
+
+Pattern di utilizzo tipico:
+
+User carica pagina talk → check_favorite
+User clicca "aggiungi" → add_favorites
+User clicca "rimuovi" → remove_favorites
+User visualizza lista → get_favorites
+
 
 ---
 
