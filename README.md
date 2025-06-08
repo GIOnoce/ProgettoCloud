@@ -134,9 +134,9 @@ Esempio schema output:
 
 Pattern di utilizzo tipico:
 
-User carica pagina talk → check_favorite
-User clicca "aggiungi" → add_favorites
-User clicca "rimuovi" → remove_favorites
+User carica pagina talk → check_favorite<br>
+User clicca "aggiungi" → add_favorites<br>
+User clicca "rimuovi" → remove_favorites<br>
 User visualizza lista → get_favorites
 
 
