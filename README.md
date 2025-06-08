@@ -167,14 +167,16 @@ POST /get_watch_next
 
 ```
 /lambda/
-  get_watch_next_by_id.js
-  update_percentage.js
+  get_watch_next_by_id/
+  update_percentage/
+  get_all/
+  add_favorites/
+  remove_favorites/
+  check_favorites/
+  get_favorites/
 
 /glue/
   pyspark_job.py
-
-/api_examples/
-  response_example.json
 
 /presentation/
   MyTEDx_Rewind_Presentation.pptx
