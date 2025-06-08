@@ -175,7 +175,8 @@ POST /get_watch_next
   check_favorites/
   get_favorites/
 
-Ogni cartella funzione lambda contiene la corrispettiva funzione handler.js, db.js, Talk.js, Favorites.js (per le funzioni favorites) e la environmental variable per connettersi al database.
+Ogni cartella funzione lambda contiene la corrispettiva funzione handler.js, db.js, Talk.js, Favorites.js (per le funzioni favorites)
+ e la environmental variable per connettersi al database.
 
 /glue/
   pyspark_job.py
