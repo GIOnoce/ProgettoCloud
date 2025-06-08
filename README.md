@@ -19,7 +19,7 @@
 - **MongoDB Atlas** – Database NoSQL finale
 - **AWS Lambda + API Gateway** – Backend serverless per le API
 - **Flutter** – App mobile cross-platform
-- **GitHub + CodePipeline** – CI/CD
+- **GitHub** – CI/CD
 
 ---
 
